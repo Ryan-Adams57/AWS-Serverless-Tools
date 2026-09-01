@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless To-Do REST API
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref TodoTable
+
+Resources:
+  TodoTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TodoItems
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  TodoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: app.lambda_handler
+      CodeUri: src/
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TodoTable
+      Events:
+        CreateTodo:
+          Type: Api
+          Properties:
+            Path: /todos
+            Method: POST
+        GetTodos:
+          Type: Api
+          Properties:
+            Path: /todos
+            Method: GET
+        GetTodo:
+          Type: Api
+          Properties:
+            Path: /todos/{id}
+            Method: GET
+        DeleteTodo:
+          Type: Api
+          Properties:
+            Path: /todos/{id}
+            Method: DELETE
+
+Outputs:
+  ApiEndpoint:
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/todos"
